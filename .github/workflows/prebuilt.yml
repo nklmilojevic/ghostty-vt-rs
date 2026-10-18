@@ -1,0 +1,130 @@
+name: Prebuilt
+
+# Builds libghostty-vt for every prebuilt target at build.rs's GHOSTTY_COMMIT, publishes the
+# archives as the release `ghostty-<commit12>`, and opens a pull request writing their SHA-256
+# into prebuilt.rs. Run it after moving the pin.
+on:
+  workflow_dispatch: {}
+
+permissions: {}
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build (${{ matrix.target }})
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            runner: macos-26
+          - target: aarch64-apple-ios
+            runner: macos-26
+          - target: aarch64-apple-ios-sim
+            runner: macos-26
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-24.04
+          - target: x86_64-unknown-linux-musl
+            runner: ubuntu-24.04
+          - target: aarch64-unknown-linux-gnu
+            runner: ubuntu-24.04-arm
+          - target: aarch64-unknown-linux-musl
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: 1.99.1
+          targets: ${{ matrix.target }}
+      - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
+        with:
+          version: 0.16.0
+          use-cache: false
+      - name: Build and pack
+        run: scripts/package-prebuilt.sh ${{ matrix.target }} "$RUNNER_TEMP/dist"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: prebuilt-${{ matrix.target }}
+          path: ${{ runner.temp }}/dist/*
+          retention-days: 3
+
+  release:
+    name: Release and pull request
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # the release and the pull request's branch
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: prebuilt-*
+          path: ${{ runner.temp }}/dist
+          merge-multiple: true
+      - name: Publish the archives
+        id: release
+        run: |
+          set -euo pipefail
+          commit="$(sed -n 's/^const GHOSTTY_COMMIT: &str = "\([0-9a-f]*\)";/\1/p' crates/ghostty-vt-rs-sys/build.rs)"
+          tag="ghostty-${commit:0:12}"
+          cd "$RUNNER_TEMP/dist"
+          ls -l
+          sha256sum --check ./*.sha256
+          if gh release view "$tag" --repo "$REPO" >/dev/null 2>&1; then
+            gh release upload "$tag" --repo "$REPO" --clobber ./*.tar.gz ./*.sha256
+          else
+            gh release create "$tag" --repo "$REPO" --target "$GITHUB_SHA" --latest=false \
+              --title "libghostty-vt at Ghostty ${commit:0:12}" \
+              --notes "Static libghostty-vt for ghostty-vt-rs-sys, built from Ghostty ${commit} (ReleaseFast)." \
+              ./*.tar.gz ./*.sha256
+          fi
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+      - name: Write prebuilt.rs
+        env:
+          COMMIT: ${{ steps.release.outputs.commit }}
+        run: |
+          set -euo pipefail
+          short="${COMMIT:0:12}"
+          {
+            echo "// Written by .github/workflows/prebuilt.yml from the release \`ghostty-<commit12>\`: the Ghostty"
+            echo "// commit the archives were built from, and the SHA-256 of each target's archive. A commit other"
+            echo "// than build.rs's GHOSTTY_COMMIT means no prebuilt library for any target."
+            echo "const PREBUILT_COMMIT: &str = \"$COMMIT\";"
+            echo "const PREBUILT: &[(&str, &str)] = &["
+            for f in $(ls "$RUNNER_TEMP"/dist/*.sha256 | LC_ALL=C sort); do
+              name="$(basename "$f" .tar.gz.sha256)"
+              target="${name#ghostty-vt-"$short"-}"
+              echo "    (\"$target\", \"$(cut -d' ' -f1 "$f")\"),"
+            done
+            echo "];"
+          } > crates/ghostty-vt-rs-sys/prebuilt.rs
+          cat crates/ghostty-vt-rs-sys/prebuilt.rs
+      - name: Open the pull request
+        env:
+          COMMIT: ${{ steps.release.outputs.commit }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git diff --quiet && { echo "prebuilt.rs already matches"; exit 0; }
+          branch="prebuilt/${TAG}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git commit -qam "chore: prebuilt libghostty-vt for Ghostty ${COMMIT:0:12}"
+          git push -f origin "$branch"
+          gh pr create --repo "$REPO" --head "$branch" --base main \
+            --title "chore: prebuilt libghostty-vt for Ghostty ${COMMIT:0:12}" \
+            --body "Checksums of the archives in [${TAG}](https://github.com/${REPO}/releases/tag/${TAG})." \
+            || echo "a pull request for $branch exists"

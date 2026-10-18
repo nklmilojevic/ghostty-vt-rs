@@ -1,0 +1,45 @@
+[package]
+name = "ghostty-vt-rs-sys"
+description = "Raw FFI bindings for libghostty-vt, Ghostty's terminal emulation library, with prebuilt static libraries"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/nklmilojevic/ghostty-vt-rs"
+readme = "README.md"
+keywords = ["ghostty", "terminal", "vt", "ffi"]
+categories = ["external-ffi-bindings", "command-line-interface"]
+rust-version = "1.90"
+links = "ghostty-vt"
+build = "build.rs"
+include = ["build.rs", "prebuilt.rs", "src/**", "tools/**", "tests/**", "README.md", "LICENSE*"]
+
+[package.metadata.ghostty]
+# The Ghostty commit these bindings and the prebuilt libraries are built from (build.rs's
+# GHOSTTY_COMMIT); read by dependents' tooling.
+commit = "1e9e14af5df14211892f5fc15fd21a49c7d94868"
+
+[package.metadata.docs.rs]
+# build.rs skips the native library on docs.rs; the checked-in bindings are enough.
+all-features = false
+
+[lib]
+doctest = false
+
+[features]
+pkg-config = ["dep:pkg-config"]
+link-dynamic = []
+bindgen-tool = ["dep:bindgen", "dep:libc", "dep:heck"]
+
+[dependencies]
+bindgen = { version = "0.72.1", optional = true }
+libc = { version = "0.2", optional = true }
+heck = { version = "0.5", optional = true }
+
+[build-dependencies]
+pkg-config = { version = "0.3", optional = true }
+sha2 = "0.10"
+
+[[bin]]
+name = "gen-bindings"
+path = "tools/gen_bindings.rs"
+required-features = ["bindgen-tool"]

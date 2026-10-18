@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+# A new push to a pull request replaces its run.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Every action is pinned to a commit (the tag it was taken from is in the comment).
+jobs:
+  checks:
+    name: Pins, format and clippy
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Ghostty pins
+        run: scripts/check-pins.sh
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: 1.99.1
+          components: clippy, rustfmt
+      - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
+        with:
+          version: 0.16.0
+          use-cache: false
+      - name: Format
+        run: cargo fmt --all --check
+      # Source build: clippy runs the build script, and the prebuilt archives may not exist yet.
+      - name: Clippy
+        env:
+          GHOSTTY_VT_RS_SYS_BUILD: source
+        run: |
+          cargo clippy --locked --all-targets -- -D warnings
+          cargo clippy --locked --all-targets --features bindgen-tool -- -D warnings
+
+  test:
+    # Links and runs the library, built from source with Zig and taken prebuilt.
+    name: Test (${{ matrix.os }}, ${{ matrix.build }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-26]
+        build: [source, prebuilt]
+    runs-on: ${{ matrix.os }}
+    env:
+      GHOSTTY_VT_RS_SYS_BUILD: ${{ matrix.build }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Prebuilt archives for this commit
+        id: pins
+        run: |
+          if scripts/check-pins.sh --release >/dev/null 2>&1; then
+            echo "prebuilt=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prebuilt=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        if: matrix.build == 'source' || steps.pins.outputs.prebuilt == 'true'
+        with:
+          toolchain: 1.99.1
+          targets: ${{ startsWith(matrix.os, 'macos') && 'aarch64-apple-ios,aarch64-apple-ios-sim' || '' }}
+      - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
+        if: matrix.build == 'source'
+        with:
+          version: 0.16.0
+          use-cache: false
+      - name: Test
+        if: matrix.build == 'source' || steps.pins.outputs.prebuilt == 'true'
+        run: cargo test --locked
+      # The iOS libraries link only into an app; building the crate checks they are found.
+      - name: iOS
+        if: startsWith(matrix.os, 'macos') && (matrix.build == 'source' || steps.pins.outputs.prebuilt == 'true')
+        run: |
+          cargo build --locked --target aarch64-apple-ios
+          cargo build --locked --target aarch64-apple-ios-sim
