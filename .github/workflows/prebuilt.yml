@@ -84,13 +84,27 @@ jobs:
           ls -l
           sha256sum --check ./*.sha256
           if gh release view "$tag" --repo "$REPO" >/dev/null 2>&1; then
-            gh release upload "$tag" --repo "$REPO" --clobber ./*.tar.gz ./*.sha256
+            # A published archive is never replaced: crate versions pin its SHA-256, and a
+            # rebuild isn't byte-identical. Only targets the release lacks are added.
+            published="$(gh release view "$tag" --repo "$REPO" --json assets --jq '.assets[].name')"
+            new=()
+            for f in ./*.tar.gz; do
+              grep -qxF "$(basename "$f")" <<<"$published" || new+=("$f" "$f.sha256")
+            done
+            if (( ${#new[@]} )); then
+              gh release upload "$tag" --repo "$REPO" "${new[@]}"
+            else
+              echo "every target is published already"
+            fi
           else
             gh release create "$tag" --repo "$REPO" --target "$GITHUB_SHA" --latest=false \
               --title "libghostty-vt at Ghostty ${commit:0:12}" \
               --notes "Static libghostty-vt for ghostty-vt-rs-sys, built from Ghostty ${commit} (ReleaseFast)." \
               ./*.tar.gz ./*.sha256
           fi
+          # The checksums of record are the release's, for old and new targets alike.
+          mkdir -p "$RUNNER_TEMP/sums"
+          gh release download "$tag" --repo "$REPO" --pattern '*.sha256' --dir "$RUNNER_TEMP/sums" --clobber
           echo "commit=$commit" >> "$GITHUB_OUTPUT"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
       - name: Write prebuilt.rs
@@ -105,7 +119,7 @@ jobs:
             echo "// than build.rs's GHOSTTY_COMMIT means no prebuilt library for any target."
             echo "const PREBUILT_COMMIT: &str = \"$COMMIT\";"
             echo "const PREBUILT: &[(&str, &str)] = &["
-            for f in $(ls "$RUNNER_TEMP"/dist/*.sha256 | LC_ALL=C sort); do
+            for f in $(ls "$RUNNER_TEMP"/sums/*.sha256 | LC_ALL=C sort); do
               name="$(basename "$f" .tar.gz.sha256)"
               target="${name#ghostty-vt-"$short"-}"
               echo "    (\"$target\", \"$(cut -d' ' -f1 "$f")\"),"
