@@ -32,6 +32,8 @@ jobs:
             runner: ubuntu-24.04-arm
           - target: aarch64-unknown-linux-musl
             runner: ubuntu-24.04-arm
+          - target: wasm32-unknown-unknown
+            runner: ubuntu-24.04
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read

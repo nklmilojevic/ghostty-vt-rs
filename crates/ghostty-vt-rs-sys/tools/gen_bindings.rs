@@ -68,6 +68,9 @@ fn main() {
         .generate_cstr(true)
         .derive_default(true)
         .size_t_is_usize(true)
+        // Layout asserts would pin the generating host's pointer width, and the bindings would
+        // not compile for wasm32. tests/link.rs checks the ABI against the library instead.
+        .layout_tests(false)
         .default_enum_style(EnumVariation::ModuleConsts)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .parse_callbacks(Box::new(Callbacks));
