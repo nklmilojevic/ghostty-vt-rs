@@ -83,3 +83,42 @@ jobs:
         run: |
           cargo build --locked --target aarch64-apple-ios
           cargo build --locked --target aarch64-apple-ios-sim
+
+  wasm:
+    # Links into a wasm module and runs under Node: what a browser client of libghostty-vt does.
+    name: wasm32 (${{ matrix.build }})
+    strategy:
+      fail-fast: false
+      matrix:
+        build: [source, prebuilt]
+    runs-on: ubuntu-24.04
+    env:
+      GHOSTTY_VT_RS_SYS_BUILD: ${{ matrix.build }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Prebuilt archives for this commit
+        id: pins
+        run: |
+          if scripts/check-pins.sh --release >/dev/null 2>&1 &&
+             grep -q '"wasm32-unknown-unknown"' crates/ghostty-vt-rs-sys/prebuilt.rs; then
+            echo "prebuilt=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prebuilt=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        if: matrix.build == 'source' || steps.pins.outputs.prebuilt == 'true'
+        with:
+          toolchain: 1.99.1
+          components: clippy
+          targets: wasm32-unknown-unknown
+      - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
+        if: matrix.build == 'source'
+        with:
+          version: 0.16.0
+          use-cache: false
+      - name: Clippy, build and run
+        if: matrix.build == 'source' || steps.pins.outputs.prebuilt == 'true'
+        run: |
+          cargo clippy --locked --target wasm32-unknown-unknown --all-targets -- -D warnings
+          cargo build --locked --release --target wasm32-unknown-unknown --example wasm_smoke
+          node scripts/wasm-smoke.mjs target/wasm32-unknown-unknown/release/examples/wasm_smoke.wasm

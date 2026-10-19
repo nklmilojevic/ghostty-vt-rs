@@ -328,15 +328,19 @@ fn build_vendored(link_mode: LinkMode, target: &str) {
     let zig_global_cache_dir = out_dir.join("zig-global-cache");
 
     let optimize = zig_optimize_mode();
-    // Apple targets: the oldest CPUs macOS 14 runs on, rather than the generic baseline.
+    // Apple targets: the oldest CPUs macOS 14 runs on, rather than the generic baseline. wasm:
+    // none, so ghostty picks its own browser baseline (generic plus simd128).
     let default_cpu = match target {
-        "aarch64-apple-darwin" => "apple_m1",
-        "x86_64-apple-darwin" => "x86_64_v3",
-        _ => "baseline",
+        "aarch64-apple-darwin" => Some("apple_m1"),
+        "x86_64-apple-darwin" => Some("x86_64_v3"),
+        "wasm32-unknown-unknown" => None,
+        _ => Some("baseline"),
     };
-    let cpu = env::var("GHOSTTY_VT_RS_SYS_CPU").unwrap_or_else(|_| default_cpu.to_owned());
+    let cpu = env::var("GHOSTTY_VT_RS_SYS_CPU")
+        .ok()
+        .or_else(|| default_cpu.map(str::to_owned));
     assert!(
-        !cpu.is_empty(),
+        cpu.as_deref() != Some(""),
         "GHOSTTY_VT_RS_SYS_CPU must not be empty when set"
     );
 
@@ -382,7 +386,7 @@ fn build_vendored(link_mode: LinkMode, target: &str) {
         // For iOS builds this only affects the host-native flat artifacts:
         // ghostty resolves its own per-platform targets for the xcframework
         // slices, so -Dcpu does not leak into them.
-        .arg(format!("-Dcpu={cpu}"))
+        .args(cpu.map(|cpu| format!("-Dcpu={cpu}")))
         .arg(if ios_platform.is_some() {
             "-Demit-xcframework=true"
         } else {
@@ -434,6 +438,19 @@ fn build_vendored(link_mode: LinkMode, target: &str) {
 
     if ios_platform.is_none() {
         warn_unused_xcframework(&install_prefix.join("lib"));
+    }
+    // A wasm build installs the library and ghostty-vt.wasm but no headers; the prebuilt
+    // archive (and gen-bindings) want them next to the library like every other target.
+    if target.starts_with("wasm32-") {
+        assert!(
+            matches!(link_mode, LinkMode::Static),
+            "building for {target} supports static linking only; \
+             disable the link-dynamic feature"
+        );
+        copy_dir_all(
+            &ghostty_dir.join("include").join("ghostty"),
+            &install_prefix.join("include").join("ghostty"),
+        );
     }
     link_install_prefix(link_mode, target, &install_prefix);
 }
@@ -755,6 +772,9 @@ fn zig_target(target: &str) -> String {
         "aarch64-pc-windows-msvc" => "aarch64-windows-msvc",
         "aarch64-linux-android" => "aarch64-linux-android",
         "x86_64-linux-android" => "x86_64-linux-android",
+        // A static archive for a Rust wasm module to link; ghostty's own browser module
+        // (ghostty-vt.wasm) is built alongside it and not used.
+        "wasm32-unknown-unknown" => "wasm32-freestanding",
         other => panic!("unsupported Rust target for vendored build: {other}"),
     };
     value.to_owned()

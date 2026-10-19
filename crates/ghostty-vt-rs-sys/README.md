@@ -22,7 +22,7 @@ of this crate follows one Ghostty commit.
    in `prebuilt.rs`. Built ReleaseFast for every profile, for the target's default CPU.
    Targets: `aarch64-apple-darwin`, `x86_64-unknown-linux-gnu`, `x86_64-unknown-linux-musl`,
    `aarch64-unknown-linux-gnu`, `aarch64-unknown-linux-musl`, `aarch64-apple-ios`,
-   `aarch64-apple-ios-sim`.
+   `aarch64-apple-ios-sim`, `wasm32-unknown-unknown`.
 3. **From source**: Ghostty at the pinned commit, built with Zig 0.16. Used for any other
    target, for `link-dynamic`, and when asked for below.
 
@@ -39,6 +39,22 @@ of this crate follows one Ghostty commit.
 A prebuilt archive holds `lib/libghostty-vt.a`, `include/ghostty/` and Ghostty's license
 (`LICENSE-ghostty`). Each one's SHA-256 is pinned in `prebuilt.rs`, so a build only links the
 archive this crate version was published with.
+
+## wasm32
+
+`wasm32-unknown-unknown` links libghostty-vt built for Zig's `wasm32-freestanding` (with
+`simd128`, which every current browser engine has) into the Rust module, so one `.wasm` holds
+both; the library imports nothing. Two things differ from the native targets:
+
+- There is no platform source of secure random bytes. Set one with `ghostty_sys_set(
+  SysOption::GHOSTTY_SYS_OPT_RANDOM_SECURE, …)` (e.g. backed by `crypto.getRandomValues`)
+  before using anything that needs entropy: without it, Kitty paste events fail with
+  `GHOSTTY_IO_ERROR`.
+- Static linking only (no `link-dynamic`).
+
+`examples/wasm_smoke.rs` and `scripts/wasm-smoke.mjs` check that it links and runs:
+`cargo build --release --target wasm32-unknown-unknown --example wasm_smoke`, then
+`node scripts/wasm-smoke.mjs target/wasm32-unknown-unknown/release/examples/wasm_smoke.wasm`.
 
 ## Moving to another Ghostty commit
 
