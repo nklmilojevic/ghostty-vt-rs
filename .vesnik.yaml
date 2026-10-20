@@ -5,6 +5,7 @@ style:
   product: "Rust bindings for libghostty-vt, the terminal emulation library of Ghostty"
 
 breaking_bumps_minor: true
+branch: main
 
 packages:
   - path: crates/ghostty-vt-rs-sys

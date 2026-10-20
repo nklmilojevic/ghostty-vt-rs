@@ -64,8 +64,8 @@ both; the library imports nothing. Two things differ from the native targets:
    `GHOSTTY_INCLUDE_DIR=<target>/debug/build/ghostty-vt-rs-sys-<hash>/out/ghostty-install/include cargo run --features bindgen-tool --bin gen-bindings`.
 3. Merge, then run the **Prebuilt** workflow: it publishes the archives as the release
    `ghostty-<commit12>` and opens a pull request with their checksums in `prebuilt.rs`.
-4. Merge that, then run `just release` from a clean `main`. It checks the pins against the
-   prebuilt archives, then `vesnik release --yes` bumps the version, commits, and pushes the
+4. Merge that, then run `just release` from a clean `main`. It fast-forwards `main`, checks the
+   pins against the prebuilt archives, then `vesnik release --yes` bumps the version, commits, and pushes the
    tag `vX.Y.Z`: the **Publish** workflow publishes to crates.io.
 
 ## Credits
