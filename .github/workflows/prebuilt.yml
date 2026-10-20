@@ -60,7 +60,7 @@ jobs:
   release:
     name: Release and pull request
     needs: build
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: write # the release and the pull request's branch
       pull-requests: write
