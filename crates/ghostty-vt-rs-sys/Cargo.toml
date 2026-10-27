@@ -1,7 +1,7 @@
 [package]
 name = "ghostty-vt-rs-sys"
 description = "Raw FFI bindings for libghostty-vt, Ghostty's terminal emulation library, with prebuilt static libraries"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/nklmilojevic/ghostty-vt-rs"
