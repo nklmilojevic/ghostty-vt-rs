@@ -19,11 +19,12 @@ of this crate follows one Ghostty commit.
    `link-dynamic`).
 2. **Prebuilt** (the default): a static library for the target, downloaded once from this
    repository's release `ghostty-<commit12>` with `curl` and checked against the SHA-256 pinned
-   in `prebuilt.rs`. Built ReleaseFast for every profile, for the target's default CPU.
+   in `prebuilt.rs`. Built in Zig's `fast` mode for every profile, for the target's default
+   CPU.
    Targets: `aarch64-apple-darwin`, `x86_64-unknown-linux-gnu`, `x86_64-unknown-linux-musl`,
    `aarch64-unknown-linux-gnu`, `aarch64-unknown-linux-musl`, `aarch64-apple-ios`,
    `aarch64-apple-ios-sim`, `wasm32-unknown-unknown`.
-3. **From source**: Ghostty at the pinned commit, built with Zig 0.16. Used for any other
+3. **From source**: Ghostty at the pinned commit, built with Zig 0.17. Used for any other
    target, for `link-dynamic`, and when asked for below.
 
 | Variable | Effect |
@@ -59,7 +60,7 @@ both; the library imports nothing. Two things differ from the native targets:
 ## Moving to another Ghostty commit
 
 1. Set `GHOSTTY_COMMIT` in `build.rs` and `commit` in `Cargo.toml`.
-2. Build from source once (`GHOSTTY_VT_RS_SYS_BUILD=source cargo build`, Zig 0.16 on `PATH`) and
+2. Build from source once (`GHOSTTY_VT_RS_SYS_BUILD=source cargo build`, Zig 0.17 on `PATH`) and
    regenerate the bindings from the installed headers:
    `GHOSTTY_INCLUDE_DIR=<target>/debug/build/ghostty-vt-rs-sys-<hash>/out/ghostty-install/include cargo run --features bindgen-tool --bin gen-bindings`.
 3. Merge, then run the **Prebuilt** workflow: it publishes the archives as the release

@@ -47,7 +47,7 @@ jobs:
           targets: ${{ matrix.target }}
       - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
         with:
-          version: 0.16.0
+          version: 0.17.0
           use-cache: false
       - name: Build and pack
         run: scripts/package-prebuilt.sh ${{ matrix.target }} "$RUNNER_TEMP/dist"
@@ -99,7 +99,7 @@ jobs:
           else
             gh release create "$tag" --repo "$REPO" --target "$GITHUB_SHA" --latest=false \
               --title "libghostty-vt at Ghostty ${commit:0:12}" \
-              --notes "Static libghostty-vt for ghostty-vt-rs-sys, built from Ghostty ${commit} (ReleaseFast)." \
+              --notes "Static libghostty-vt for ghostty-vt-rs-sys, built from Ghostty ${commit} (fast mode)." \
               ./*.tar.gz ./*.sha256
           fi
           # The checksums of record are the release's, for old and new targets alike.

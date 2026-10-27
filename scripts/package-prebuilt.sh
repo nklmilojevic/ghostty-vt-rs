@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds libghostty-vt from source for TARGET (Zig 0.16 on PATH) and packs the install prefix the
+# Builds libghostty-vt from source for TARGET (Zig 0.17 on PATH) and packs the install prefix the
 # crate links against: lib/libghostty-vt.a, include/ and Ghostty's license.
 #   scripts/package-prebuilt.sh TARGET OUT_DIR
 # Writes OUT_DIR/ghostty-vt-<commit12>-<TARGET>.tar.gz and its .sha256.
@@ -14,7 +14,7 @@ commit="$(sed -n 's/^const GHOSTTY_COMMIT: &str = "\([0-9a-f]*\)";/\1/p' "$crate
 name="ghostty-vt-${commit:0:12}-$target.tar.gz"
 
 cd "$repo"
-# The shipped settings: ReleaseFast and the default CPU, whatever the environment says.
+# The shipped settings: `fast` (ReleaseFast) and the default CPU, whatever the environment says.
 unset GHOSTTY_VT_RS_SYS_CPU GHOSTTY_VT_RS_SYS_OPTIMIZE GHOSTTY_SOURCE_DIR GHOSTTY_ZIG_SYSTEM_DIR
 prefix="$(GHOSTTY_VT_RS_SYS_BUILD=source cargo build --release --locked --target "$target" \
     -p ghostty-vt-rs-sys --message-format=json |
