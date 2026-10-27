@@ -16,7 +16,7 @@ include = ["build.rs", "prebuilt.rs", "src/**", "tools/**", "tests/**", "README.
 [package.metadata.ghostty]
 # The Ghostty commit these bindings and the prebuilt libraries are built from (build.rs's
 # GHOSTTY_COMMIT); read by dependents' tooling.
-commit = "1e9e14af5df14211892f5fc15fd21a49c7d94868"
+commit = "4a4fc017940bec38c93b278c10c6a18c591f3e63"
 
 [package.metadata.docs.rs]
 # build.rs skips the native library on docs.rs; the checked-in bindings are enough.

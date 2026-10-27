@@ -5,7 +5,7 @@ use std::process::Command;
 /// Pinned ghostty commit: src/bindings.rs is generated from its headers, and the prebuilt
 /// libraries are built from it. Keep Cargo.toml's `[package.metadata.ghostty] commit` in step.
 const GHOSTTY_REPO: &str = "https://github.com/ghostty-org/ghostty.git";
-const GHOSTTY_COMMIT: &str = "1e9e14af5df14211892f5fc15fd21a49c7d94868";
+const GHOSTTY_COMMIT: &str = "4a4fc017940bec38c93b278c10c6a18c591f3e63";
 
 /// Where the prebuilt libraries are published: the release `ghostty-<commit12>` of this
 /// repository, one `ghostty-vt-<commit12>-<target>.tar.gz` per target.
@@ -136,7 +136,8 @@ fn main() {
 /// The prebuilt library's install prefix (`lib/libghostty-vt.a`, `include/`), when this build
 /// can use one: static linking, no source-build setting (`GHOSTTY_ZIG_SYSTEM_DIR`, a CPU or
 /// optimize mode of its own), and `GHOSTTY_VT_RS_SYS_BUILD` not `source`. The prebuilt
-/// libraries are ReleaseFast for every profile, for the default CPU of each target.
+/// libraries are built in Zig's `fast` mode for every profile, for the default CPU of each
+/// target.
 ///
 /// `GHOSTTY_VT_RS_SYS_PREBUILT_DIR` names an unpacked archive to use as is (a Nix build fetches
 /// and checks it outside its sandbox). Otherwise the archive is downloaded once into the cache
@@ -327,7 +328,7 @@ fn build_vendored(link_mode: LinkMode, target: &str) {
     let zig_cache_dir = cache_dir.join("zig-cache");
     let zig_global_cache_dir = out_dir.join("zig-global-cache");
 
-    let optimize = zig_optimize_mode();
+    let optimize = zig_optimize_mode(target);
     // Apple targets: the oldest CPUs macOS 14 runs on, rather than the generic baseline. wasm:
     // none, so ghostty picks its own browser baseline (generic plus simd128).
     let default_cpu = match target {
@@ -590,32 +591,33 @@ fn emit_include_metadata(include_paths: &[PathBuf]) {
 /// Decide which Zig `OptimizeMode` to pass to `zig build`.
 ///
 /// The `GHOSTTY_VT_RS_SYS_OPTIMIZE` environment variable overrides this unconditionally; accepted
-/// values are the four Zig `OptimizeMode` names (`Debug`, `ReleaseSafe`, `ReleaseFast`,
-/// `ReleaseSmall`).
+/// values are the four Zig 0.17 `Optimize` names (`debug`, `safe`, `fast`, `small`), or the
+/// names they had before Zig 0.17 (`Debug`, `ReleaseSafe`, `ReleaseFast`, `ReleaseSmall`).
 ///
-/// Defaults to `ReleaseFast` for optimized builds. If `DEBUG` is `true` (as cargo sets for the
-/// `dev` profile), `Debug` mode is used. Otherwise, if `OPT_LEVEL` is `s` or `z`, `ReleaseSmall`
-/// is used.
-fn zig_optimize_mode() -> &'static str {
+/// Defaults to `fast` for optimized builds. If `DEBUG` is `true` (as cargo sets for the `dev`
+/// profile), `debug` mode is used, except for iOS: Zig 0.17.0's standard library does not compile
+/// for iOS with safety checks on (https://codeberg.org/ziglang/zig/issues/37061, fixed for
+/// 0.17.1), so iOS builds stay `fast`. Otherwise, if `OPT_LEVEL` is `s` or `z`, `small` is used.
+fn zig_optimize_mode(target: &str) -> &'static str {
     if let Ok(override_mode) = env::var("GHOSTTY_VT_RS_SYS_OPTIMIZE") {
         return match override_mode.as_str() {
-            "Debug" => "Debug",
-            "ReleaseSafe" => "ReleaseSafe",
-            "ReleaseFast" => "ReleaseFast",
-            "ReleaseSmall" => "ReleaseSmall",
+            "debug" | "Debug" => "debug",
+            "safe" | "ReleaseSafe" => "safe",
+            "fast" | "ReleaseFast" => "fast",
+            "small" | "ReleaseSmall" => "small",
             other => panic!(
-                "GHOSTTY_VT_RS_SYS_OPTIMIZE must be one of Debug, ReleaseSafe, ReleaseFast, ReleaseSmall (got '{other}')"
+                "GHOSTTY_VT_RS_SYS_OPTIMIZE must be one of debug, safe, fast, small (got '{other}')"
             ),
         };
     }
 
-    if env::var("DEBUG").as_deref() == Ok("true") {
-        return "Debug";
+    if env::var("DEBUG").as_deref() == Ok("true") && ios_xcframework_platform(target).is_none() {
+        return "debug";
     }
 
     match env::var("OPT_LEVEL").as_deref() {
-        Ok("s") | Ok("z") => "ReleaseSmall",
-        _ => "ReleaseFast",
+        Ok("s") | Ok("z") => "small",
+        _ => "fast",
     }
 }
 
