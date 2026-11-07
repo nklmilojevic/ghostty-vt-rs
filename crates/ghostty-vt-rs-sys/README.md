@@ -6,12 +6,17 @@ common targets.
 
 ```toml
 [dependencies]
-ghostty-vt-rs-sys = "0.1"
+ghostty-vt-rs-sys = "0.3"
 ```
 
-The bindings (`src/bindings.rs`) are generated from the headers of the pinned Ghostty commit
-(`[package.metadata.ghostty] commit` in `Cargo.toml`). libghostty-vt is pre-1.0: each version
-of this crate follows one Ghostty commit.
+Wraps **libghostty-vt 1.0.0** (Ghostty tag `vt-1.0.0`). The bindings (`src/bindings.rs`) are
+generated from that release's headers; `[package.metadata.ghostty]` in `Cargo.toml` records its
+`version` and `commit`.
+
+This crate has its own version numbers: they follow changes to the Rust API, which don't map
+one to one onto libghostty-vt's (a C ABI-compatible release can still add a struct field, and
+the bindings can change without an upstream release). Each release pins one libghostty-vt
+release, named in the changelog.
 
 ## How the library is found
 

@@ -14,8 +14,9 @@ build = "build.rs"
 include = ["build.rs", "prebuilt.rs", "src/**", "tools/**", "tests/**", "README.md", "LICENSE*"]
 
 [package.metadata.ghostty]
-# The Ghostty commit these bindings and the prebuilt libraries are built from (build.rs's
-# GHOSTTY_COMMIT); read by dependents' tooling.
+# The libghostty-vt release (Ghostty tag vt-<version>) and its commit, which these bindings and
+# the prebuilt libraries are built from (build.rs's GHOSTTY_COMMIT); read by dependents' tooling.
+version = "1.0.0"
 commit = "0fa3d577a5614150ff8e2c152de5fb9d5c6d2dec"
 
 [package.metadata.docs.rs]
