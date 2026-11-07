@@ -4,9 +4,8 @@ Raw FFI bindings for **libghostty-vt**, the terminal emulation library of
 [Ghostty](https://ghostty.org), with **prebuilt static libraries**: no Zig needed for the
 common targets.
 
-```toml
-[dependencies]
-ghostty-vt-rs-sys = "0.3"
+```sh
+cargo add ghostty-vt-rs-sys
 ```
 
 Wraps **libghostty-vt 1.0.0** (Ghostty tag `vt-1.0.0`). The bindings (`src/bindings.rs`) are

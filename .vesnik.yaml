@@ -3,6 +3,8 @@ model: claude-haiku-5-5
 
 style:
   product: "Rust bindings for libghostty-vt, the terminal emulation library of Ghostty"
+  rules:
+    - "Name the libghostty-vt release the bindings are built from (its version and Ghostty tag, e.g. libghostty-vt 1.0.0, tag vt-1.0.0), read from [package.metadata.ghostty] in crates/ghostty-vt-rs-sys/Cargo.toml, even when it did not change."
 
 breaking_bumps_minor: true
 branch: main

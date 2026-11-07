@@ -60,6 +60,17 @@ impl bindings::String {
     }
 }
 
+impl bindings::StyleColor {
+    /// The kind of color, as a [`StyleColorTag`](bindings::StyleColorTag) value.
+    ///
+    /// The C struct keeps the tag in one byte (`tag: u8`), while the `StyleColorTag` constants
+    /// are `c_uint`, so compare through this method rather than the field:
+    /// `color.kind() == StyleColorTag::RGB`.
+    pub fn kind(&self) -> bindings::StyleColorTag::Type {
+        self.tag.into()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::bindings;
@@ -71,6 +82,15 @@ mod tests {
             colors.size,
             std::mem::size_of::<bindings::RenderStateColors>()
         );
+    }
+
+    #[test]
+    fn style_color_kind_compares_with_the_tag_constants() {
+        let color = bindings::StyleColor {
+            tag: bindings::StyleColorTag::RGB as u8,
+            ..Default::default()
+        };
+        assert_eq!(color.kind(), bindings::StyleColorTag::RGB);
     }
 
     #[test]
