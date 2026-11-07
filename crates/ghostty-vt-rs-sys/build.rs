@@ -5,7 +5,7 @@ use std::process::Command;
 /// Pinned ghostty commit: src/bindings.rs is generated from its headers, and the prebuilt
 /// libraries are built from it. Keep Cargo.toml's `[package.metadata.ghostty] commit` in step.
 const GHOSTTY_REPO: &str = "https://github.com/ghostty-org/ghostty.git";
-const GHOSTTY_COMMIT: &str = "4a4fc017940bec38c93b278c10c6a18c591f3e63";
+const GHOSTTY_COMMIT: &str = "0fa3d577a5614150ff8e2c152de5fb9d5c6d2dec";
 
 /// Where the prebuilt libraries are published: the release `ghostty-<commit12>` of this
 /// repository, one `ghostty-vt-<commit12>-<target>.tar.gz` per target.
