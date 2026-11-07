@@ -42,6 +42,18 @@ jobs:
         run: |
           cargo clippy --locked --all-targets -- -D warnings
           cargo clippy --locked --all-targets --features bindgen-tool -- -D warnings
+      # The checked-in bindings must be what gen-bindings makes from the pinned headers, which
+      # the clippy build above installed.
+      - name: Bindings match the headers
+        env:
+          GHOSTTY_VT_RS_SYS_BUILD: source
+        run: |
+          include=$(find target/debug/build -type d -path '*/ghostty-install/include' -print -quit)
+          test -f "$include/ghostty/vt.h"
+          GHOSTTY_INCLUDE_DIR="$PWD/$include" cargo run --locked -q -p ghostty-vt-rs-sys \
+            --features bindgen-tool --bin gen-bindings > /dev/null
+          rustfmt --edition 2024 crates/ghostty-vt-rs-sys/src/bindings.rs
+          git diff --exit-code -- crates/ghostty-vt-rs-sys/src/bindings.rs
 
   test:
     # Links and runs the library, built from source with Zig and taken prebuilt.
