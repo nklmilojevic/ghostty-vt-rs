@@ -66,6 +66,8 @@ fn main() {
         .allowlist_type("[Gg]hostty.*")
         .allowlist_var("GHOSTTY_.*")
         .generate_cstr(true)
+        // Constants defined with casts, such as GHOSTTY_STYLE_FLAG_BOLD, need clang to evaluate them.
+        .clang_macro_fallback()
         .derive_default(true)
         .size_t_is_usize(true)
         // Layout asserts would pin the generating host's pointer width, and the bindings would
@@ -99,7 +101,7 @@ const PREFIXES: &[(&str, &str)] = &[
     ("GhosttyTerminalOption", "GHOSTTY_TERMINAL_OPT"),
     (
         "GhosttyTerminalScrollViewportTag",
-        "GHOSTTY_SCROLL_VIEWPORT",
+        "GHOSTTY_TERMINAL_SCROLL_VIEWPORT",
     ),
     ("GhosttyStyleColorTag", "GHOSTTY_STYLE_COLOR"),
     ("GhosttyRowSemanticPrompt", "GHOSTTY_ROW_SEMANTIC"),
@@ -109,7 +111,6 @@ const PREFIXES: &[(&str, &str)] = &[
     ("GhosttyModeReportState", "GHOSTTY_MODE_REPORT"),
     ("GhosttyFocusEvent", "GHOSTTY_FOCUS"),
     ("GhosttyResult", "GHOSTTY_"),
-    ("GhosttyKittyGraphicsImageData", "GHOSTTY_KITTY_IMAGE_DATA"),
     (
         "GhosttySelectionGestureEventOption",
         "GHOSTTY_SELECTION_GESTURE_EVENT_OPT",
@@ -117,6 +118,16 @@ const PREFIXES: &[(&str, &str)] = &[
     (
         "GhosttySnapshotDecoderOption",
         "GHOSTTY_SNAPSHOT_DECODER_OPT",
+    ),
+    ("GhosttyFormatterOption", "GHOSTTY_FORMATTER_OPT"),
+    (
+        "GhosttyKittyGraphicsPlacementIteratorOption",
+        "GHOSTTY_KITTY_GRAPHICS_PLACEMENT_ITERATOR_OPT",
+    ),
+    ("GhosttyRenderStateOption", "GHOSTTY_RENDER_STATE_OPT"),
+    (
+        "GhosttyRenderStateRowOption",
+        "GHOSTTY_RENDER_STATE_ROW_OPT",
     ),
 ];
 
@@ -175,7 +186,11 @@ impl ParseCallbacks for Callbacks {
 
     fn int_macro(&self, name: &str, _value: i64) -> Option<IntKind> {
         // Fixup some int macro types to reduce manual casting
-        if name.starts_with("GHOSTTY_DA_") || name.starts_with("GHOSTTY_MODS_") {
+        if name.starts_with("GHOSTTY_DA_")
+            || name.starts_with("GHOSTTY_MODS_")
+            || name.starts_with("GHOSTTY_STYLE_FLAG_")
+            || name == "GHOSTTY_STYLE_UNDERLINE_MASK"
+        {
             Some(IntKind::U16)
         } else if name.starts_with("GHOSTTY_KITTY_KEY_") || name.starts_with("GHOSTTY_COLOR_NAMED_")
         {
