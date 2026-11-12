@@ -31,7 +31,7 @@ jobs:
           scripts/check-pins.sh --release
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
-          toolchain: 1.99.1
+          toolchain: 1.100.0
       - uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
         id: auth
         # Fails until trusted publishing is set up; the secret then stands in.
