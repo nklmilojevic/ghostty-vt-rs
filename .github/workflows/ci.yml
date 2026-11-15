@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Ghostty pins
         run: scripts/check-pins.sh
-      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         with:
           toolchain: 1.100.0
           components: clippy, rustfmt
@@ -76,7 +76,7 @@ jobs:
           else
             echo "prebuilt=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         if: matrix.build == 'source' || steps.pins.outputs.prebuilt == 'true'
         with:
           toolchain: 1.100.0
@@ -117,7 +117,7 @@ jobs:
           else
             echo "prebuilt=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         if: matrix.build == 'source' || steps.pins.outputs.prebuilt == 'true'
         with:
           toolchain: 1.100.0
