@@ -27,7 +27,7 @@ jobs:
         run: scripts/check-pins.sh
       - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         with:
-          toolchain: 1.100.0
+          toolchain: 1.100.1
           components: clippy, rustfmt
       - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
         with:
@@ -79,7 +79,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         if: matrix.build == 'source' || steps.pins.outputs.prebuilt == 'true'
         with:
-          toolchain: 1.100.0
+          toolchain: 1.100.1
           targets: ${{ startsWith(matrix.os, 'macos') && 'aarch64-apple-ios,aarch64-apple-ios-sim' || '' }}
       - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
         if: matrix.build == 'source'
@@ -120,7 +120,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         if: matrix.build == 'source' || steps.pins.outputs.prebuilt == 'true'
         with:
-          toolchain: 1.100.0
+          toolchain: 1.100.1
           components: clippy
           targets: wasm32-unknown-unknown
       - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
