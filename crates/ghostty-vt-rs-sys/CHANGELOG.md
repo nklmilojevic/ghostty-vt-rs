@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.3.1 - 2026-11-28
+
+This release updates the built libghostty-vt library to version 1.0.2, tag vt-1.0.2. It gives you the bug fixes and performance improvements from libghostty-vt 1.0.1 and 1.0.2.
+
+### Fixes
+
+- The crate now builds libghostty-vt 1.0.2, which fixes bugs and improves performance. The Rust API does not change, so your existing code keeps working.
+
 ## v0.3.0 - 2026-11-07
 
 This release builds the bindings from libghostty-vt 1.0.0, tag vt-1.0.0, the first release with a stable C ABI. The API changed, and the scrollback limit now defaults to 10,000 bytes, so update your code before you upgrade.
