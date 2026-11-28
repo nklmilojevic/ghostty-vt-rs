@@ -8,7 +8,7 @@ common targets.
 cargo add ghostty-vt-rs-sys
 ```
 
-Wraps **libghostty-vt 1.0.0** (Ghostty tag `vt-1.0.0`). The bindings (`src/bindings.rs`) are
+Wraps **libghostty-vt 1.0.2** (Ghostty tag `vt-1.0.2`). The bindings (`src/bindings.rs`) are
 generated from that release's headers; `[package.metadata.ghostty]` in `Cargo.toml` records its
 `version` and `commit`.
 
